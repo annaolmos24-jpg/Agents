@@ -1,0 +1,15 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Single-page app: send unknown paths to index.html.
+# Function routes (/api/*) are declared in each function's `config.path`
+# and take priority over this rule.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
