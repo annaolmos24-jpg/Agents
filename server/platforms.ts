@@ -45,7 +45,7 @@ export async function searchPlatform(
     }
     case "instagram": {
       // Instagram has no hashtag reel search with pagination, so hashtags are searched as keywords.
-      const page = cursor ? Number(cursor) : 1;
+      const page = cursor && /^\d{1,3}$/.test(cursor) ? Math.max(1, Number(cursor)) : 1;
       const body = await scGet("/v2/instagram/reels/search", { query: hashtag ? `#${query}` : query, page }, apiKey);
       const videos = normalizeInstagram(body);
       return { videos, nextCursor: videos.length > 0 ? String(page + 1) : undefined };

@@ -1,5 +1,5 @@
 import type { Video } from "../types";
-import { arr, compactStats, dedupeById, firstUrl, num, obj, str, toIso } from "../util";
+import { arr, compactStats, dedupeById, firstUrl, num, obj, safeUrl, str, toIso } from "../util";
 
 /** Handles trending (`aweme_list`), hashtag (`aweme_list`) and keyword (`search_item_list[].aweme_info`). */
 export function normalizeTikTok(payload: unknown): Video[] {
@@ -25,12 +25,15 @@ function toVideo(raw: unknown): Video | null {
     platform: "tiktok",
     url: pickUrl(item, handle, id),
     thumbnail:
-      firstUrl(video.cover) ?? firstUrl(video.origin_cover) ?? firstUrl(video.dynamic_cover) ?? null,
+      safeUrl(firstUrl(video.cover)) ??
+      safeUrl(firstUrl(video.origin_cover)) ??
+      safeUrl(firstUrl(video.dynamic_cover)) ??
+      null,
     caption: str(item.desc) ?? "",
     author: {
       handle,
       name: str(author.nickname),
-      avatar: firstUrl(author.avatar_thumb) ?? firstUrl(author.avatar_medium),
+      avatar: safeUrl(firstUrl(author.avatar_thumb)) ?? safeUrl(firstUrl(author.avatar_medium)),
     },
     stats: compactStats({
       views: num(stats.play_count),
@@ -48,10 +51,13 @@ function handleFromUrl(url: string | undefined): string | undefined {
 
 function pickUrl(item: Record<string, unknown>, handle: string, id: string): string {
   // Prefer a URL that actually contains this video's id; fall back to building one.
-  for (const candidate of [str(item.url), str(item.share_url)]) {
-    if (candidate?.includes(id)) return candidate.split("?")[0];
+  for (const candidate of [item.url, item.share_url]) {
+    const url = safeUrl(candidate, ["tiktok.com"]);
+    if (url?.includes(id)) return url.split("?")[0];
   }
+  const safeHandle = encodeURIComponent(handle);
+  const safeId = encodeURIComponent(id);
   return handle
-    ? `https://www.tiktok.com/@${handle}/video/${id}`
-    : `https://www.tiktok.com/video/${id}`;
+    ? `https://www.tiktok.com/@${safeHandle}/video/${safeId}`
+    : `https://www.tiktok.com/video/${safeId}`;
 }

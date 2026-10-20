@@ -52,6 +52,8 @@ npx netlify dev
 
 Every merge to `main` deploys automatically after that.
 
+> **About the password:** it's a simple shared password for a personal tool. There is no limit on wrong guesses, so choose something long. After you change it, results cached under the old password can still be served for up to 15 minutes.
+
 > Never commit your API key. `.env` is gitignored. Only `.env.example` (names, no values) is tracked.
 
 ## Expert agents

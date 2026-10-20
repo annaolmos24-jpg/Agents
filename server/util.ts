@@ -56,3 +56,19 @@ export function dedupeById<T extends { id: string }>(items: T[]): T[] {
   const seen = new Set<string>();
   return items.filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true)));
 }
+
+/** Accepts only https URLs, optionally restricted to the given hosts (and their subdomains). */
+export function safeUrl(value: unknown, hosts?: string[]): string | undefined {
+  const raw = str(value);
+  if (!raw) return undefined;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return undefined;
+    if (hosts && !hosts.some((h) => url.hostname === h || url.hostname.endsWith(`.${h}`))) {
+      return undefined;
+    }
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}

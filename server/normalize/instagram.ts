@@ -1,5 +1,5 @@
 import type { Video } from "../types";
-import { arr, compactStats, dedupeById, num, obj, str, toIso } from "../util";
+import { arr, compactStats, dedupeById, num, obj, safeUrl, str, toIso } from "../util";
 
 /** Handles trending reels (`reels[].user`) and reel search (`reels[].owner`). */
 export function normalizeInstagram(payload: unknown): Video[] {
@@ -18,7 +18,8 @@ function toVideo(raw: unknown): Video | null {
   const owner = obj(item.user ?? item.owner);
   const shortcode = str(item.shortcode);
   const url =
-    str(item.url) ?? (shortcode ? `https://www.instagram.com/reel/${shortcode}/` : undefined);
+    safeUrl(item.url, ["instagram.com"]) ??
+    (shortcode ? `https://www.instagram.com/reel/${encodeURIComponent(shortcode)}/` : undefined);
   if (!url) return null;
 
   return {
@@ -26,12 +27,12 @@ function toVideo(raw: unknown): Video | null {
     platform: "instagram",
     url,
     thumbnail:
-      str(item.image_url) ?? str(item.thumbnail_src) ?? str(item.display_url) ?? null,
+      safeUrl(item.image_url) ?? safeUrl(item.thumbnail_src) ?? safeUrl(item.display_url) ?? null,
     caption: str(item.caption) ?? "",
     author: {
       handle: str(owner.username) ?? "",
       name: str(owner.full_name),
-      avatar: str(owner.profile_pic_url),
+      avatar: safeUrl(owner.profile_pic_url),
     },
     stats: compactStats({
       views: num(item.play_count) ?? num(item.video_view_count),

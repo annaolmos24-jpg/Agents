@@ -1,5 +1,5 @@
 import type { Video } from "../types";
-import { arr, compactStats, dedupeById, num, obj, str, toIso } from "../util";
+import { arr, compactStats, dedupeById, num, obj, safeUrl, str, toIso } from "../util";
 
 /** Handles trending shorts (`shorts`), search (`shorts` + `videos`) and hashtag search (`videos`). */
 export function normalizeYouTube(payload: unknown): Video[] {
@@ -21,13 +21,16 @@ function toVideo(raw: unknown): Video | null {
   return {
     id,
     platform: "youtube",
-    url: str(item.url) ?? `https://www.youtube.com/watch?v=${id}`,
-    thumbnail: str(item.thumbnail) ?? `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    url:
+      safeUrl(item.url, ["youtube.com", "youtu.be"]) ??
+      `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
+    thumbnail:
+      safeUrl(item.thumbnail) ?? `https://i.ytimg.com/vi/${encodeURIComponent(id)}/hqdefault.jpg`,
     caption: str(item.title) ?? "",
     author: {
       handle: handle || str(channel.title) || "",
       name: str(channel.title),
-      avatar: str(channel.thumbnail),
+      avatar: safeUrl(channel.thumbnail),
     },
     stats: compactStats({
       views: num(item.viewCount) ?? num(item.viewCountInt),

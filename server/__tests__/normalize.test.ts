@@ -128,3 +128,21 @@ describe("robustness", () => {
     expect(normalizeTikTok({ aweme_list: [item, item] })).toHaveLength(1);
   });
 });
+
+describe("URL safety", () => {
+  it("drops non-https or off-platform links and rebuilds safe ones", () => {
+    const [ig] = normalizeInstagram({
+      reels: [{ id: "1", shortcode: "abc", url: "javascript:alert(1)", image_url: "http://x/y.jpg" }],
+    });
+    expect(ig.url).toBe("https://www.instagram.com/reel/abc/");
+    expect(ig.thumbnail).toBeNull();
+
+    const [yt] = normalizeYouTube({ shorts: [{ id: "q1", url: "https://evil.example/watch?v=q1" }] });
+    expect(yt.url).toBe("https://www.youtube.com/watch?v=q1");
+
+    const [tt] = normalizeTikTok({
+      aweme_list: [{ aweme_id: "9", url: "https://tiktok.com.evil.example/@x/video/9" }],
+    });
+    expect(tt.url).toBe("https://www.tiktok.com/video/9");
+  });
+});

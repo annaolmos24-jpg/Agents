@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchPlatform, type FeedRequest } from "./api";
+import { fetchPlatform, requestKey, type FeedRequest } from "./api";
 import type { Platform, Video } from "./types";
 
 export type PlatformState =
@@ -10,32 +10,31 @@ export type PlatformState =
 
 type Feed = Record<Platform, PlatformState>;
 
-const idle = (): Feed => ({
-  tiktok: { status: "idle" },
-  instagram: { status: "idle" },
-  youtube: { status: "idle" },
-});
-
 /**
- * Loads each enabled platform independently. Every new request bumps a generation
- * counter so slow responses from an older search can never overwrite newer results.
+ * Loads each enabled platform independently. A platform only refetches when the part of
+ * the request it actually uses changes (e.g. region doesn't affect Instagram), and
+ * toggling one platform never reloads the others. Responses that arrive after the request
+ * changed are ignored.
  */
 export function useFeed(request: FeedRequest, platforms: Platform[]) {
-  const [feed, setFeed] = useState<Feed>(idle);
-  const generation = useRef(0);
-  const key = JSON.stringify(request);
+  const [feed, setFeed] = useState<Feed>({
+    tiktok: { status: "idle" },
+    instagram: { status: "idle" },
+    youtube: { status: "idle" },
+  });
+  // The request key each platform is currently showing (or loading) results for.
+  const loadedKey = useRef<Partial<Record<Platform, string>>>({});
+
+  const keys = platforms.map((p) => `${p}|${requestKey(p, request)}`).join(",");
 
   useEffect(() => {
-    const gen = ++generation.current;
-    const req = JSON.parse(key) as FeedRequest;
-    setFeed(() => {
-      const next = idle();
-      for (const p of platforms) next[p] = { status: "loading", videos: [] };
-      return next;
-    });
     for (const platform of platforms) {
-      fetchPlatform(platform, req).then((result) => {
-        if (gen !== generation.current) return;
+      const key = requestKey(platform, request);
+      if (loadedKey.current[platform] === key) continue;
+      loadedKey.current[platform] = key;
+      setFeed((prev) => ({ ...prev, [platform]: { status: "loading", videos: [] } }));
+      fetchPlatform(platform, request).then((result) => {
+        if (loadedKey.current[platform] !== key) return;
         setFeed((prev) => ({
           ...prev,
           [platform]: result.ok
@@ -44,19 +43,19 @@ export function useFeed(request: FeedRequest, platforms: Platform[]) {
         }));
       });
     }
-    // Platforms are compared by value so toggling one doesn't refetch the others' identical data.
+    // `keys` captures everything in `request` and `platforms` that should trigger a fetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, platforms.join(",")]);
+  }, [keys]);
 
   const loadMore = useCallback(
     (platform: Platform) => {
       const current = feed[platform];
       if (request.mode !== "search" || current.status !== "ready" || !current.nextCursor) return;
       if (current.loadingMore) return;
-      const gen = generation.current;
+      const key = loadedKey.current[platform];
       setFeed((prev) => ({ ...prev, [platform]: { ...current, loadingMore: true } }));
       fetchPlatform(platform, { ...request, cursor: current.nextCursor }).then((result) => {
-        if (gen !== generation.current) return;
+        if (loadedKey.current[platform] !== key) return;
         setFeed((prev) => {
           const before = prev[platform];
           const existing = before.status === "ready" ? before.videos : current.videos;
