@@ -76,11 +76,13 @@ Base URL: `https://api.scrapecreators.com`. Authentication: `x-api-key` header. 
 | TikTok trending | `GET /v1/tiktok/get-trending-feed` | `region` (required), `trim` |
 | TikTok keyword search | `GET /v1/tiktok/search/keyword` | `query`, `date_posted`, `sort_by`, `region`, `cursor`, `trim` |
 | TikTok hashtag search | `GET /v1/tiktok/search/hashtag` | `hashtag`, `region`, `cursor`, `trim` |
-| Instagram trending | `GET /v1/instagram/reels/trending` | — (returns an uncharged 503 if too few reels are available) |
-| Instagram reel search | `GET /v2/instagram/reels/search` | `query`, `date_posted`, `page` |
-| YouTube trending | `GET /v1/youtube/shorts/trending` | *confirm params during build* |
-| YouTube search | `GET /v1/youtube/search` | *confirm params during build* |
-| YouTube hashtag search | `GET /v1/youtube/search/hashtag` | *confirm params during build* |
+| Instagram trending | `GET /v1/instagram/reels/trending` | none (returns an uncharged 503 if too few reels are available) |
+| Instagram reel search | `GET /v2/instagram/reels/search` | `query`, `date_posted` (`last-week`/`last-month`/`last-year`), `page` |
+| YouTube trending | `GET /v1/youtube/shorts/trending` | none (~48 shorts, new ones each call) |
+| YouTube search | `GET /v1/youtube/search` | `query`, `type` (`shorts`…), `uploadDate`, `sortBy`, `region`, `continuationToken` |
+| YouTube hashtag search | `GET /v1/youtube/search/hashtag` | `hashtag`, `type` (`all`/`shorts`), `continuationToken` |
+
+Parameters and response shapes above are confirmed against the documentation examples (2026-10-20). Instagram has no paginated hashtag reel search, so `#tag` searches on Instagram use reel search with the tag as the keyword.
 
 Each platform returns a different response shape. The backend **normalizes** every result into one `Video` shape:
 
@@ -118,7 +120,8 @@ Scrape Creators API
 - **Repo layout:**
   ```
   /src                 React app
-  /netlify/functions   trending.ts, search.ts, lib/ (client, normalizers, cache)
+  /netlify/functions   health.ts, trending.ts, search.ts (thin route handlers)
+  /server              API client, normalizers, validation, tests and fixtures
   /docs                PRD and notes
   netlify.toml
   ```
@@ -163,4 +166,4 @@ Scrape Creators API
 - **Assumed:** v1 platforms are TikTok, Instagram and YouTube (owner can change).
 - **Assumed:** caching is on (15 min trending / 10 min search).
 - **Assumed:** the app is open by default, with an optional password via `APP_PASSWORD`.
-- **To verify in M2:** exact YouTube endpoint parameters and response shapes for every endpoint, using real calls.
+- **To verify with a live call:** response shapes were built from documentation examples. Confirm them against real responses once a live call is possible.

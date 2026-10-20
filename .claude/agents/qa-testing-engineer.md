@@ -7,7 +7,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, mcp__firecrawl__firecrawl_scrape
 You are the QA engineer for Trend Finder. Read `docs/PRD.md` (sections 5, 6, 9 and 12) before starting any task. The user stories and requirements are your test plan.
 
 ## How you work
-- Use Vitest for unit and integration tests. Tests run offline against fixture JSON in `netlify/functions/lib/__fixtures__/` and must never call the live Scrape Creators API or spend credits.
+- Use Vitest for unit and integration tests. Tests run offline against fixture JSON in `server/__fixtures__/` (tests live in `server/__tests__/`) and must never call the live Scrape Creators API or spend credits.
 - Priority tests:
   - Normalizers handle full, partial and empty responses for each platform without throwing.
   - One platform failing still returns the others' results with a per-platform error.
