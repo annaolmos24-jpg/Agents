@@ -11,8 +11,9 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "isolatedModules": true,
+    "resolveJsonModule": true,
     "noEmit": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "netlify/functions", "vite.config.ts"]
+  "include": ["src", "server", "netlify/functions", "vite.config.ts"]
 }
