@@ -33,7 +33,7 @@ export function SearchBar({
       />
       <button
         type="submit"
-        className="rounded-lg bg-[var(--accent)] px-4 py-2 font-semibold text-white hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
+        className="rounded-lg bg-[var(--accent-solid)] px-4 py-2 font-semibold text-white hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
       >
         Search
       </button>

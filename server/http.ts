@@ -1,3 +1,4 @@
+import { PASSWORD_HEADER, passwordEnabled } from "./auth";
 import { PLATFORMS, type Platform } from "./types";
 
 const MAX_QUERY_LENGTH = 100;
@@ -6,8 +7,12 @@ export function json(body: unknown, status = 200, cacheSeconds = 0): Response {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (cacheSeconds > 0) {
     // Netlify's CDN caches per full URL (query string included), so repeat requests cost no credits.
-    headers["netlify-cdn-cache-control"] = `public, s-maxage=${cacheSeconds}, stale-while-revalidate=60`;
+    // `durable` shares the cached copy across Netlify's edge locations, saving more credits.
+    headers["netlify-cdn-cache-control"] = `public, durable, s-maxage=${cacheSeconds}, stale-while-revalidate=60`;
     headers["cache-control"] = "public, max-age=0, must-revalidate";
+    // With a password set, keep a separate cache copy per password so a visitor without it
+    // can never be served someone else's cached results.
+    if (passwordEnabled()) headers["netlify-vary"] = `header=${PASSWORD_HEADER}`;
   } else {
     headers["cache-control"] = "no-store";
   }
@@ -51,6 +56,8 @@ export function parseCursor(raw: string | null, platforms: Platform[]): string |
   if (raw.length > 2000) throw new BadRequest("cursor is too long");
   return raw;
 }
+
+export const unauthorized = () => json({ error: "Password required" }, 401);
 
 export function getApiKey(): string | undefined {
   return process.env.SCRAPECREATORS_API_KEY || undefined;

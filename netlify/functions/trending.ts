@@ -1,10 +1,20 @@
 import type { Config } from "@netlify/functions";
-import { BadRequest, cacheSecondsFor, getApiKey, json, parsePlatforms, parseRegion } from "../../server/http";
+import { isAuthorized } from "../../server/auth";
+import {
+  BadRequest,
+  cacheSecondsFor,
+  getApiKey,
+  json,
+  parsePlatforms,
+  parseRegion,
+  unauthorized,
+} from "../../server/http";
 import { fetchTrending, settleAll } from "../../server/platforms";
 
 const CACHE_SECONDS = 15 * 60;
 
 export default async (req: Request) => {
+  if (!isAuthorized(req)) return unauthorized();
   const apiKey = getApiKey();
   if (!apiKey) return json({ error: "Server is missing SCRAPECREATORS_API_KEY" }, 500);
 

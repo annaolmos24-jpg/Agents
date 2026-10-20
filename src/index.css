@@ -9,6 +9,7 @@
   --text: #0f172a;
   --muted: #475569;
   --accent: #6d28d9;
+  --accent-solid: #6d28d9;
   --danger: #b91c1c;
 }
 
@@ -21,7 +22,8 @@
     --border: #334155;
     --text: #f1f5f9;
     --muted: #94a3b8;
-    --accent: #8b5cf6;
+    --accent: #a78bfa;
+    --accent-solid: #6d28d9;
     --danger: #f87171;
   }
 }

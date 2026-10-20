@@ -28,6 +28,6 @@ export function formatAgo(iso: string | undefined, now = Date.now()): string | n
 
 export const PLATFORM_META: Record<Platform, { label: string; badge: string; dot: string }> = {
   tiktok: { label: "TikTok", badge: "bg-slate-950/80 text-white", dot: "bg-cyan-400" },
-  instagram: { label: "Instagram", badge: "bg-pink-600/90 text-white", dot: "bg-pink-500" },
-  youtube: { label: "YouTube", badge: "bg-red-600/90 text-white", dot: "bg-red-500" },
+  instagram: { label: "Instagram", badge: "bg-pink-700 text-white", dot: "bg-pink-500" },
+  youtube: { label: "YouTube", badge: "bg-red-700 text-white", dot: "bg-red-500" },
 };

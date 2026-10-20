@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchHealth, type FeedRequest, type Health } from "./api";
+import { fetchHealth, savePassword, type FeedRequest, type Health } from "./api";
 import { PlatformToggles, REGIONS, SearchBar, SelectField } from "./components/Controls";
+import { PasswordGate } from "./components/PasswordGate";
 import { SkeletonCard, VideoCard } from "./components/VideoCard";
 import { PLATFORM_META } from "./format";
 import { SORTS, sortVideos, type SortKey } from "./sort";
@@ -14,21 +15,47 @@ function readQueryFromUrl(): string {
 }
 
 export default function App() {
+  // undefined = still checking; null = health check failed (the feed will show its own errors).
+  const [health, setHealth] = useState<Health | null | undefined>(undefined);
+  const refresh = () => fetchHealth().then(setHealth);
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  if (health === undefined) {
+    return (
+      <p role="status" className="p-8 text-center text-[var(--muted)]">
+        Loading…
+      </p>
+    );
+  }
+  if (health?.passwordEnabled && !health.authorized) {
+    return <PasswordGate onUnlock={refresh} />;
+  }
+  return (
+    <Finder
+      health={health}
+      onLocked={() => {
+        // The saved password stopped working (e.g. it was changed), so ask again.
+        savePassword(null);
+        refresh();
+      }}
+    />
+  );
+}
+
+function Finder({ health, onLocked }: { health: Health | null; onLocked: () => void }) {
   const [query, setQuery] = useState(readQueryFromUrl);
   const [platforms, setPlatforms] = useState<Platform[]>([...PLATFORMS]);
   const [region, setRegion] = useState<Region>("US");
   const [sort, setSort] = useState<SortKey>("views");
-  const [health, setHealth] = useState<Health | null | undefined>(undefined);
 
   const request = useMemo<FeedRequest>(
     () => (query ? { mode: "search", query, region } : { mode: "trending", region }),
     [query, region],
   );
   const { feed, loadMore } = useFeed(request, platforms);
-
-  useEffect(() => {
-    fetchHealth().then(setHealth);
-  }, []);
 
   // Keep ?q= in the address bar so searches can be shared and the back button works.
   useEffect(() => {
@@ -49,10 +76,20 @@ export default function App() {
     [feed, platforms, sort],
   );
   const anyLoading = states.some(([, s]) => s.status === "loading");
+  const locked = states.some(([, s]) => s.status === "error" && s.error === "Password required");
+  useEffect(() => {
+    if (locked) onLocked();
+  }, [locked, onLocked]);
   const allFailed = states.every(([, s]) => s.status === "error");
 
   return (
     <div className="min-h-screen">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-20 focus:rounded-lg focus:bg-[var(--accent-solid)] focus:px-4 focus:py-2 focus:text-white"
+      >
+        Skip to results
+      </a>
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -76,7 +113,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main id="main" tabIndex={-1} className="mx-auto max-w-7xl px-4 py-6 focus:outline-none">
         {health && !health.apiKeyConfigured && (
           <p role="alert" className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
             The server has no Scrape Creators API key yet. Add <code>SCRAPECREATORS_API_KEY</code> in
